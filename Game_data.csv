@@ -1,7 +1,6 @@
 Round,Left Dots,Right Dots,Choice,Correct,Username
-1,14,12,Right,False,hghg
-2,12,13,Right,True,hghg
-3,9,12,Left,False,hghg
-4,12,14,Right,True,hghg
-5,18,20,Left,False,hghg
-6,18,20,Right,True,hghg
+1,16,13,Right,False,ghhg
+2,13,11,Left,True,ghhg
+3,20,15,Right,False,ghhg
+4,17,14,Left,True,ghhg
+5,14,12,Right,False,ghhg
