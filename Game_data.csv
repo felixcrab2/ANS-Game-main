@@ -1,35 +1,7 @@
-Timestamp,answers
-11/12/2023 18:46:38,"round,left_dots,right_dots,choice,correct,username
-1,16,18,Right,True,dereck
-2,18,21,Right,True,dereck
-3,14,18,Left,False,dereck
-"
-11/12/2023 18:47:02,"round,left_dots,right_dots,choice,correct,username
-1,17,22,Right,True,heather
-2,9,10,Left,False,heather
-3,10,11,Right,True,heather
-"
-11/12/2023 18:47:23,"round,left_dots,right_dots,choice,correct,username
-1,14,15,Right,True,nina
-2,9,6,Left,True,nina
-3,9,7,Left,True,nina
-"
-11/12/2023 18:47:47,"round,left_dots,right_dots,choice,correct,username
-1,20,15,Left,True,hasbulla
-2,16,18,Left,False,hasbulla
-3,21,18,Right,False,hasbulla
-"
-11/12/2023 23:26:26,"round,left_dots,right_dots,choice,correct,username
-1,11,14,Left,False,benny boy
-2,13,14,Right,True,benny boy
-3,21,23,Left,False,benny boy
-4,9,8,Right,False,benny boy
-5,19,25,Left,False,benny boy
-"
-11/12/2023 23:31:18,"round,left_dots,right_dots,choice,correct,username
-1,13,14,Left,False,hector
-2,11,12,Right,True,hector
-3,12,10,Left,True,hector
-4,15,13,Right,False,hector
-5,18,20,Left,False,hector
-"
+Round,Left Dots,Right Dots,Choice,Correct,Username
+1,14,12,Right,False,hghg
+2,12,13,Right,True,hghg
+3,9,12,Left,False,hghg
+4,12,14,Right,True,hghg
+5,18,20,Left,False,hghg
+6,18,20,Right,True,hghg

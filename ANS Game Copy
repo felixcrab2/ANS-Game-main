@@ -1,0 +1,194 @@
+import ipywidgets as widgets
+from IPython.display import display, clear_output
+import random
+import math
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+import threading
+import time
+import requests
+from bs4 import BeautifulSoup
+import json
+
+# Global list to keep track of game rounds
+game_rounds = []
+total_rounds = 5  # Set the total number of rounds you want in the game
+buttons_enabled = False  # Flag to track if buttons are enabled
+
+# Global variable to store the username
+username = ""
+
+def get_username():
+    global username
+    username = input("Enter your username: ")
+
+def generate_circles_in_oval(oval_coords, num_dots):
+    dots = []
+    x0, y0, x1, y1 = oval_coords
+    width = x1 - x0
+    height = y1 - y0
+    margin = 0.1
+
+    for _ in range(num_dots):
+        angle = random.uniform(0, 2 * math.pi)
+        radius_x = (width - margin) / 2 * random.uniform(0.6, 1)
+        radius_y = (height - margin) / 2 * random.uniform(0.6, 1)
+        x = x0 + width / 2 + radius_x * math.cos(angle)
+        y = y0 + height / 2 + radius_y * math.sin(angle)
+        dots.append((x, y))
+    return dots
+
+def draw_game(left_dots, right_dots):
+    fig, ax = plt.subplots()
+    left_oval = Ellipse((0.3, 0.5), 0.4, 0.9, fill=False)
+    right_oval = Ellipse((0.7, 0.5), 0.4, 0.9, fill=False)
+    ax.add_patch(left_oval)
+    ax.add_patch(right_oval)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+
+    # Remove axis labels and ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+
+    for x, y in left_dots:
+        ax.plot(x, y, 'ro')
+    for x, y in right_dots:
+        ax.plot(x, y, 'bo')
+
+    plt.close(fig)
+    return fig
+
+def on_button_click(button_label):
+    global buttons_enabled
+    if buttons_enabled:
+        left_dots, right_dots = current_round_data
+        correct = (button_label == "Left" and len(left_dots) > len(right_dots)) or \
+                  (button_label == "Right" and len(right_dots) > len(left_dots))
+        game_rounds.append({
+            "round": len(game_rounds) + 1,
+            "left_dots": len(left_dots),
+            "right_dots": len(right_dots),
+            "choice": button_label,
+            "correct": correct,
+            "username": username  # Attach the username to the table
+        })
+        with output:
+            clear_output(wait=True)
+            print(f"You clicked {button_label.capitalize()}: {'Correct' if correct else 'Wrong'} answer!")
+
+            display(pd.DataFrame(game_rounds))
+
+        # Update the game data DataFrame
+        global game_data_df
+        game_data_df = pd.DataFrame(game_rounds)
+
+        # Save the game data as a CSV file
+        game_data_df.to_csv('game_data.csv', index=False)
+
+def enable_buttons():
+    global buttons_enabled
+    left_button.disabled = False
+    right_button.disabled = False
+    buttons_enabled = True
+    threading.Timer(3, post_timer_actions).start()  # After 3 seconds, call post_timer_actions
+
+def post_timer_actions():
+    disable_buttons()
+    next_round_button.disabled = False  # Enable the "Next Round" button after 3 seconds
+
+def disable_buttons():
+    global buttons_enabled
+    left_button.disabled = True
+    right_button.disabled = True
+    buttons_enabled = False
+
+def prepare_next_round(_btn=None):
+    global current_round_data
+    global buttons_enabled
+    global game_rounds
+    buttons_enabled = False  # Disable buttons when preparing the next round
+    next_round_button.disabled = True  # Disable the "Next Round" button at the start of the round
+
+    if len(game_rounds) >= total_rounds:
+        # Stop the game when the desired number of rounds is reached
+        print("End of the Game!")
+        send_data_to_google_form()  # Call the function to send data to Google Form
+        return
+
+    with game_view:
+        clear_output(wait=True)
+
+    ratios = [(4, 3), (7, 6), (9, 8), (10, 9), (3, 4), (6, 7), (8, 9), (9, 10)]
+    ratio = random.choice(ratios)
+    base_number = random.randint(9, 21)
+    left_num_dots = base_number
+    right_num_dots = int(base_number * ratio[1] / ratio[0])
+
+    left_dots = generate_circles_in_oval((0.1, 0.1, 0.5, 0.9), left_num_dots)
+    right_dots = generate_circles_in_oval((0.5, 0.1, 0.9, 0.9), right_num_dots)
+    current_round_data = (left_dots, right_dots)
+
+    with game_view:
+        display(draw_game(left_dots, right_dots))
+    
+    time.sleep(0.75)  # Delay for 0.75 seconds
+
+    with game_view:
+        clear_output(wait=True)
+        enable_buttons()  # Enable buttons for 3 seconds
+
+def send_data_to_google_form():
+    game_data_csv = game_data_df.to_csv(index=False)
+    data_dict = {'answers': game_data_csv}
+    form_url = 'https://docs.google.com/forms/d/e/1FAIpQLSewwYrqYPCLuTqPtiLkWJaj-tSc234CEn83zcB7Ee6G0MZ9Ag/viewform?usp=sf_link'
+    
+    def send_to_google_form(data_dict, form_url):
+        ''' Helper function to upload information to a corresponding google form 
+            You are not expected to follow the code within this function!
+        '''
+        form_id = form_url[34:90]
+        view_form_url = f'https://docs.google.com/forms/d/e/{form_id}/viewform'
+        post_form_url = f'https://docs.google.com/forms/d/e/{form_id}/formResponse'
+
+        page = requests.get(view_form_url)
+        content = BeautifulSoup(page.content, "html.parser").find('script', type='text/javascript')
+        content = content.text[27:-1]
+        result = json.loads(content)[1][1]
+        form_dict = {}
+
+        loaded_all = True
+        for item in result:
+            if item[1] not in data_dict:
+                print(f"Form item {item[1]} not found. Data not uploaded.")
+                loaded_all = False
+                return False
+            form_dict[f'entry.{item[4][0][0]}'] = data_dict[item[1]]
+
+        post_result = requests.post(post_form_url, data=form_dict)
+        return post_result.ok
+
+    send_to_google_form(data_dict, form_url)
+
+# Get the username
+get_username()
+
+left_button = widgets.Button(description="Left", disabled=True)
+right_button = widgets.Button(description="Right", disabled=True)
+next_round_button = widgets.Button(description="Next Round", disabled=False)
+output = widgets.Output()
+game_view = widgets.Output()
+
+left_button.on_click(lambda btn, _btn=left_button: on_button_click("Left"))
+right_button.on_click(lambda btn, _btn=right_button: on_button_click("Right"))
+next_round_button.on_click(prepare_next_round)
+
+display(widgets.HBox([left_button, right_button, next_round_button]))
+display(output)
+display(game_view)
+
+current_round_data = (None, None)  # Initialize round data
+prepare_next_round(None)
